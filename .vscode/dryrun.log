@@ -1,0 +1,6 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/home/eters/git/Redes-Tarea-3-Sub-Redes'
+gcc server/lib/server.c -o server.o -lpthread
+./server.o 9801
+make: Leaving directory '/home/eters/git/Redes-Tarea-3-Sub-Redes'
+ 

@@ -9,12 +9,14 @@ services:
     container_name: server
     privileged: true
     restart: on-failure
-    command: >-
-      sh -c "tail -f /dev/null"
+    #command: >-
+    #  sh -c "cd /home/lib/ &&
+    #  tail -f /dev/null"
     ports:
       - 9801:9801
     volumes:
-      - ./server/lib/server.c:/home/lib/server.c
+      - ./server/lib/:/home/lib/
+      - ./server/bash.sh:/bash.sh
     networks:
       host-bridge:
 
