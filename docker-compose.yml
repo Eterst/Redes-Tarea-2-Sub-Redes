@@ -1,0 +1,28 @@
+version: "3.8"
+
+
+services:
+  server:
+    build: 
+      context: ./server
+      dockerfile: dockerFile
+    container_name: server
+    privileged: true
+    restart: on-failure
+    command: >-
+      sh -c "tail -f /dev/null"
+    ports:
+      - 9801:9801
+    volumes:
+      - ./server/lib/server.c:/home/lib/server.c
+    networks:
+      host-bridge:
+
+networks:
+  host-bridge:
+    name: Host bridge
+    driver: bridge
+    driver_opts:
+      parent: eth0
+    ipam:
+      driver: default
