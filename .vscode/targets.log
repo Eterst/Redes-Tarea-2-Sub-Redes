@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat May  7 00:24:28 2022
+# Make data base, printed on Sat May  7 13:16:37 2022
 
 # Variables
 
@@ -55,7 +55,7 @@ PATH = /home/eters/.vscode-server/bin/57fd6d0195bb9b9d1b49f6da5db789060795de47/b
 # environment
 VSCODE_LOG_STACK = false
 # environment
-VSCODE_IPC_HOOK_CLI = /tmp/vscode-ipc-3b523685-5aee-4ac9-a862-a5c4c1cb9744.sock
+VSCODE_IPC_HOOK_CLI = /tmp/vscode-ipc-1be1764e-7fcc-42e9-ab19-129237dfc503.sock
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -69,7 +69,7 @@ PWD = /home/eters/git/Redes-Tarea-3-Sub-Redes
 # default
 .LOADED := 
 # environment
-WSL_INTEROP = /run/WSL/28474_interop
+WSL_INTEROP = /run/WSL/2572_interop
 # environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
@@ -155,7 +155,7 @@ WSL_DISTRO_NAME = Ubuntu
 
 # Directories
 
-# . (device 2080, inode 37673): 9 files, no impossibilities.
+# . (device 2064, inode 37673): 9 files, no impossibilities.
 
 # 9 files, no impossibilities in 1 directories.
 
@@ -220,6 +220,6 @@ clean:
 # strcache performance: lookups = 23 / hit rate = 30%
 # hash-table stats:
 # Load=16/8192=0%, Rehash=0, Collisions=1/23=4%
-# Finished Make data base on Sat May  7 00:24:28 2022
+# Finished Make data base on Sat May  7 13:16:37 2022
 
  
