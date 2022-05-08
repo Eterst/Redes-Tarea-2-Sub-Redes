@@ -24,15 +24,11 @@ void echo(int clientFd){
     close(clientFd);
 }
 
-int main(int argc, char const *argv[]) {
+void server(int port){
     int serverFd, clientFd;
     SA_IN server, client;
     int addr_size;
-    int port = 39801;
-    
-    if (argc == 2) {
-        port = atoi(argv[1]);
-    }
+
     memset(&serverFd, 0, sizeof(serverFd));
 
     serverFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -70,5 +66,15 @@ int main(int argc, char const *argv[]) {
         echo(clientFd);
     }
     close(serverFd);
+}
+
+int main(int argc, char const *argv[]) {
+    int port = 39801;
+    
+    if (argc == 2) {
+        port = atoi(argv[1]);
+    }
+    server(port);
+    
     return 0;
 }
