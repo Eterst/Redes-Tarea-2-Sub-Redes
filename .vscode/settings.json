@@ -4,5 +4,5 @@
         "stdlib.h": "c",
         "inet.h": "c"
     },
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Enabled"
 }

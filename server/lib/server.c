@@ -14,8 +14,8 @@ typedef struct sockaddr_in SA_IN;
 #define REGEX_NETWORK "^GET NETWORK NUMBER IP [0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9] MASK ((/[0-9][0-9]?)|([0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9]))\r?\n$"
 #define REGEX_HOST "^GET HOSTS RANGE IP [0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9] MASK ((/[0-9][0-9]?)|([0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9]))\r?\n$"
 #define REGEX_RANDOM "^GET RANDOM SUBNETS NETWORK NUMBER [0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9] MASK ((/[0-9][0-9]?)|([0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9])) NUMBER [0-9]* SIZE ((/[0-9][0-9]?)|([0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9]))\r?\n$"
-#define REGEX_MASK "^/[0-9][0-9]?\r?\n$"
-#define REGEX_MASK2 "^[0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9])\r?\n$"
+#define REGEX_MASK "^/[0-9][0-9]?\r?\n?$"
+#define REGEX_MASK2 "^[0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9]\r?\n?$"
 regex_t regexBroadcast;
 regex_t regexNetwork;
 regex_t regexHost;
@@ -30,9 +30,13 @@ struct IP
     uint8_t thirdByte;
     uint8_t fourByte;
 } typedef IP;
-
-IP *createIp(int mask)
-{
+/**
+ * @brief Crea un objeto IP
+ * 
+ * @param mask Si es 0 se inicializa cada byte en 0, de lo contrario se inicializa cada byte con 255
+ * @return IP* Nuevo IP recien creado.
+ */
+IP *createIp(int mask) {
     IP *newIp = malloc(sizeof(IP));
     uint8_t defaultValue = 0;
     if (mask)
@@ -46,9 +50,12 @@ IP *createIp(int mask)
     newIp->fourByte = defaultValue;
     return newIp;
 }
-
-int compileRegex()
-{
+/**
+ * @brief Compila los regex necesarios para el servidor
+ * 
+ * @return int 0 si se ejecuto correctamente, de lo contrario es un codigo de error.
+ */
+int compileRegex() {
     int return_value;
 
     return_value = regcomp(&regexBroadcast, REGEX_BROADCAST, REG_EXTENDED);
@@ -96,110 +103,137 @@ int compileRegex()
     return 0;
 }
 
-unsigned int ip_to_int(const char *ip)
-{
-    /* The return value. */
-    unsigned resultIp = 0;
-    /* The count of the number of bytes processed. */
-    int bytesIndex;
-    /* A pointer to the next digit to process. */
-    const char *nextDigit;
-
-    nextDigit = ip;
-    for (bytesIndex = 0; bytesIndex < 4; bytesIndex++)
-    {
-        /* The digit being processed. */
-        char digit;
-        /* The value of this byte. */
-        int digitValue = 0;
-        while (1)
-        {
-            digit = *nextDigit;
-            nextDigit++;
-            if (digit >= '0' && digit <= '9')
-            {
-                digitValue *= 10;
-                digitValue += digit - '0';
-            }
-            /* We insist on stopping at "." if we are still parsing
-               the first, second, or third numbers. If we have reached
-               the end of the numbers, we will allow any character. */
-            else if ((bytesIndex < 3 && digit == '.') || bytesIndex == 3)
-            {
-                break;
-            }
-            else
-            {
-                return -1;
-            }
-        }
-        if (digitValue >= 256)
-        {
-            return -1;
-        }
-        resultIp *= 256;
-        resultIp += digitValue;
-    }
-    return resultIp;
-}
-
-void str2ip(char *str, IP *ip)
+/**
+ * @brief Transforma un String que contiene un IP a un struct IP
+ * 
+ * @param str String que contiene el ip en formato XXX.XXX.XXX.XXX
+ * @param ip Estructura de datos de IP donde se almacenara los datos obtenidos
+ * @return int 0 si los bytes estan bien, un valor mayor a 0 si excede los limites de un byte 
+ * Codigos de error:
+ * 1: Byte 1 con mal formato
+ * 2: Byte 2 con mal formato
+ * 3: Byte 3 con mal formato
+ * 4: Byte 4 con mal formato
+ */
+int str2ip(char *str, IP *ip)
 {
     char *byte;
     byte = strtok(str, ".");
-    ip->firstByte = atoi(byte);
+    int temp = atoi(byte);
+    if (temp < 0 || temp > 255) {
+        return 1;
+    }
+    ip->firstByte = temp;
 
     byte = strtok(NULL, ".");
-    ip->secondByte = atoi(byte);
+    temp = atoi(byte);
+    if (temp < 0 || temp > 255) {
+        return 2;
+    }
+    ip->secondByte = temp;
 
     byte = strtok(NULL, ".");
-    ip->thirdByte = atoi(byte);
+    temp = atoi(byte);
+    if (temp < 0 || temp > 255) {
+        return 3;
+    }
+    ip->thirdByte = temp;
 
     byte = strtok(NULL, ".");
-    ip->fourByte = atoi(byte);
+    temp = atoi(byte);
+    if (temp < 0 || temp > 255) {
+        return 4;
+    }
+    ip->fourByte = temp;
+    return 0;
 }
-
+/**
+ * @brief Transforma un String que contiene una mascara de red a una estructura IP que contendra la mascara de red
+ * 
+ * @param str String que contiene la mascara de red con formato: /XX o XXX.XXX.XXX.XXX
+ * @param ip Estructura de datos donde se almacenara la mascara de red
+ * @return int int 0 si los bytes estan bien, un valor mayor a 0 si excede los limites de un byte 
+ * Codigos de error:
+ * 5: Mal formato en /XX. Es menor a 8 o mayor a 32
+ * 6: Byte 1 con mal formato
+ * 7: Byte 2 con mal formato
+ * 8: Byte 3 con mal formato
+ * 9: Byte 4 con mal formato
+ * 10: Mal formato. No es ni /XX ni XXX.XXX.XXX.XXX
+ * 11: Los bits de la mascara son menores 8
+ */
 int str2mask(char *str, IP *ip) {
     if (regexec(&regexMask, str, 0, NULL, 0) == 0) {
         int str_len = strlen(str);
         if (str[str_len-1] == '\n') {
             str[str_len-1] = '\0';
         }
+        str_len = strlen(str);
         if (str[str_len-1] == '\r') {
             str[str_len-1] = '\0';
         }
         int mask = atoi(str+1);
+        if(mask < 8 || mask > 32){
+            return 5;
+        }
         int diff = 32-mask;
         
         if (diff < 9) {
             ip->fourByte = ((255 >> diff) << diff);
+            return 0;
         }
-        else if (diff < 17) {
+        if (diff < 17) {
             ip->fourByte = 0;
             ip->thirdByte = ((255 >> diff) << diff);
+            return 0;
         }
-        else if (diff < 25) {
+        if (diff < 25) {
             ip->fourByte = 0;
             ip->thirdByte = 0;
             ip->secondByte = ((255 >> diff) << diff);
+            return 0;
+        }
+        return 11;
+    }
+    if (regexec(&regexMask2, str, 0, NULL, 0) == 0) {
+        int str_len = strlen(str);
+        if (str[str_len-1] == '\n') {
+            str[str_len-1] = '\0';
+        }
+        str_len = strlen(str);
+        if (str[str_len-1] == '\r') {
+            str[str_len-1] = '\0';
+        }
+        int return_value = str2ip(str, ip);
+        if(return_value){
+            return 5 + return_value;
         }
         return 0;
     }
-    if (regexec(&regexMask2, str, 0, NULL, 0) == 0) {
-
-        return 0;
-    }
-    return 1;
+    return 10;
 }
-
-int bitCompliment(IP *ip) {
+/**
+ * @brief Calcula el complemento(negación) a un IP
+ * 
+ * @param ip Estructura que representa un IP
+ */
+void bitCompliment(IP *ip) {
     ip->firstByte = ~ip->firstByte;
     ip->secondByte = ~ip->secondByte;
     ip->thirdByte = ~ip->thirdByte;
     ip->fourByte = ~ip->fourByte;
 }
-
-void str2IpMask(char *str, IP *ip, IP *netMask, int iWord) {
+/**
+ * @brief Transforma un String en un ip y mascara de red
+ * 
+ * @param str String que contiene el ip y mascara de red. Formato: 'XXX.XXX.XXX.XXX MASK /XX' o 'XXX.XXX.XXX.XXX MASK XXX.XXX.XXX.XXX'
+ * @param ip Estructura que contendra el IP obtenido
+ * @param netMask Estructura que contendra la mascara de red obtenida
+ * @param iWord Cantidad de palabras antes del IP
+ * 
+ * @return int 0 Si se ejecuto correctamente, de lo contrario es un codigo de error
+ */
+int str2IpMask(char *str, IP *ip, IP *netMask, int iWord) {
     char *token;
     char *save_ptr1;
     // Hago tres strtok para quitar GET BROADCAST IP
@@ -208,15 +242,29 @@ void str2IpMask(char *str, IP *ip, IP *netMask, int iWord) {
         token = strtok_r(NULL, " ",&save_ptr1);
     }
 
-    str2ip(token, ip);
+    int return_value = str2ip(token, ip);
+    if (return_value){
+        return return_value;
+    }
     //printf("IP: %d.%d.%d.%d\n", ip->firstByte, ip->secondByte, ip->thirdByte, ip->fourByte);
 
     token = strtok_r(NULL, " ",&save_ptr1);
     token = strtok_r(NULL, " ",&save_ptr1);
-    str2mask(token,netMask);
+    return_value = str2mask(token,netMask);
+    if (return_value){
+        return return_value;
+    }
+    return 0;
     //printf("NETMASK: %d.%d.%d.%d\n", netMask->firstByte, netMask->secondByte, netMask->thirdByte, netMask->fourByte);
 }
-
+/**
+ * @brief Aplica la operación bitwise OR entre dos IP
+ * 
+ * @param ip1 Primer IP a aplicar OR
+ * @param ip2 Segundo IP a aplicar OR
+ * 
+ * @return IP* Nuevo IP resultado del OR
+ */
 IP *ipOr(IP *ip1, IP *ip2) {
     IP *newIp = createIp(0);
     newIp->firstByte = ip1->firstByte | ip2->firstByte;
@@ -225,7 +273,13 @@ IP *ipOr(IP *ip1, IP *ip2) {
     newIp->fourByte = ip1->fourByte | ip2->fourByte;
     return newIp;
 }
-
+/**
+ * @brief Aplica la operación bitwise AND entre dos IP
+ * 
+ * @param ip1 Primer IP a aplicar AND
+ * @param ip2 Segundo IP a aplicar AND
+ * @return IP* Nuevo IP resultado del AND
+ */
 IP *ipAnd(IP *ip1, IP *ip2) {
     IP *newIp = createIp(0);
     newIp->firstByte = ip1->firstByte & ip2->firstByte;
@@ -235,6 +289,61 @@ IP *ipAnd(IP *ip1, IP *ip2) {
     return newIp;
 }
 
+void sendError(int clientFd, int return_value){
+    char response[BUFF_SIZE];
+    switch (return_value) {
+        case 1:
+            strcpy(response, "Byte 1 de IP con mal formato\n");
+            break;
+        case 2:
+            strcpy(response, "Byte 2 de IP con mal formato\n");
+            break;
+        case 3:
+            strcpy(response, "Byte 3 de IP con mal formato\n");
+            break;
+        case 4:
+            strcpy(response, "Byte 4 de IP con mal formato\n");
+            break;
+        case 5:
+            strcpy(response, "Mal formato en /XX. Es menor a 8 o mayor a 32\n");
+            break;
+        case 6:
+            strcpy(response, "Byte 1 de Mascara de Red con mal formato\n");
+            break;
+        case 7:
+            strcpy(response, "Byte 2 de Mascara de Red con mal formato\n");
+            break;
+        case 8:
+            strcpy(response, "Byte 3 de Mascara de Red con mal formato\n");
+            break;
+        case 9:
+            strcpy(response, "Byte 4 de Mascara de Red con mal formato\n");
+            break;
+        case 10:
+            strcpy(response, "Mal formato. No es ni /XX ni XXX.XXX.XXX.XXX\n");
+            break;
+        case 11:
+            strcpy(response, "Los bits de la mascara son menores 8\n");
+            break;
+        case 12:
+            strcpy(response, "No corresponde a ninguna de las 4 funcionalidades. Revise el formato:\n\nGET BROADCAST IP {dirección IP} MASK {/bits o X.X.X.X}\nGET NETWORK NUMBER IP {dirección IP} MASK {/bits o X.X.X.X}\nGET HOSTS RANGE IP {dirección IP} MASK {/bits o X.X.X.X}\nGET RANDOM SUBNETS NETWORK NUMBER {Y.Y.Y.Y} MASK {/bits o X.X.X.X} NUMBER {número de redes} SIZE {/bits o X.X.X.X}\n");
+            break;
+        default:
+            strcpy(response, "Error inesperado\n");
+            break;
+    }
+    if (write(clientFd, response, strlen(response)) < 0) {
+        perror("Error de lectura\n");
+        close(clientFd);
+        exit(6);
+    }
+    close(clientFd);
+}
+/**
+ * @brief Selecciona la funcionalidad que le da el cliente y la ejecuta.
+ * 
+ * @param tempFd File Descriptor del socket de comunicación del cliente.
+ */
 void selectFunction(int *tempFd) {
     int clientFd = *tempFd;
     free(tempFd);
@@ -244,6 +353,7 @@ void selectFunction(int *tempFd) {
     int size = read(clientFd, buffer, sizeof(buffer));
     if (size < 0) {
         perror("Error de lectura\n");
+        close(clientFd);
         exit(5);
     }
     printf("Recibido %s\n\n", buffer);
@@ -257,7 +367,11 @@ void selectFunction(int *tempFd) {
 
     if (!visited && regexec(&regexBroadcast, buffer, 0, NULL, 0) == 0) {
         visited = 1;
-        str2IpMask(buffer,ip,netMask,3);
+        int return_value = str2IpMask(buffer,ip,netMask,3);
+        if(return_value){
+            sendError(clientFd, return_value);
+            return;
+        }
         bitCompliment(netMask);
         IP *broadcastIp = ipOr(ip,netMask);
         sprintf(response, "%d.%d.%d.%d\n", broadcastIp->firstByte, broadcastIp->secondByte, broadcastIp->thirdByte, broadcastIp->fourByte);
@@ -266,7 +380,11 @@ void selectFunction(int *tempFd) {
 
     if (!visited && regexec(&regexNetwork, buffer, 0, NULL, 0) == 0) {
         visited = 1;
-        str2IpMask(buffer,ip,netMask,4);
+        int return_value = str2IpMask(buffer,ip,netMask,4);
+        if(return_value){
+            sendError(clientFd, return_value);
+            return;
+        }
         IP *gateway = ipAnd(ip,netMask);
         sprintf(response, "%d.%d.%d.%d\n", gateway->firstByte, gateway->secondByte, gateway->thirdByte, gateway->fourByte);
         free(gateway);
@@ -275,7 +393,11 @@ void selectFunction(int *tempFd) {
     if (!visited && regexec(&regexHost, buffer, 0, NULL, 0) == 0) {
         visited = 1;
         printf("Es Host\n");
-        str2IpMask(buffer,ip,netMask,4);
+        int return_value = str2IpMask(buffer,ip,netMask,4);
+        if(return_value){
+            sendError(clientFd, return_value);
+            return;
+        }
         IP *gateway = ipAnd(ip,netMask);
         bitCompliment(netMask);
         char *range1 = malloc(sizeof(char)*20);
@@ -306,7 +428,8 @@ void selectFunction(int *tempFd) {
     }
     if (!visited) {
         printf("No es ninguno\n");
-        strcpy(response, "NONE");
+        sendError(clientFd, 12);
+        return;
     }
 
     free(ip);
@@ -314,13 +437,18 @@ void selectFunction(int *tempFd) {
 
     if (write(clientFd, response, strlen(response)) < 0) {
         perror("Error de lectura\n");
+        close(clientFd);
         exit(6);
     }
     close(clientFd);
 }
-
-int server(int port)
-{
+/**
+ * @brief Funcion principal que actua como servidor. Crea hilos para atender a los clientes.
+ * 
+ * @param port Puerto por el que el servidor va a recibir comunicaciones.
+ * @return int Codigo de retorno, si es 0 se ejecuto correctamente y si es mayor a 0 es un codigo de error.
+ */
+int server(int port) {
     if (compileRegex()) {
         return 1;
     }
@@ -371,9 +499,10 @@ int server(int port)
     close(serverFd);
     return 0;
 }
-
-int main(int argc, char const *argv[])
-{
+/**
+ * @brief Funcion principal que inicia el servidor.
+ */
+int main(int argc, char const *argv[]) {
     int port = 39801;
 
     if (argc == 2) {
