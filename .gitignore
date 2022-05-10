@@ -1,3 +1,5 @@
 .vscode/
 .vscode/
 .vscode/settings.json
+server/lib/server.o
+server.o
