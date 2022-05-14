@@ -107,6 +107,15 @@ Si no se cuenta localmente con el servidor se usa el el ip especifico en lugar d
 ```bash
 telnet 186.177.110.87 9801
 ```
+
+Para **cerrar** la conexión una vez establecida la conexión se puede enviar lo siguiente para pedir al servidor cerrar la conexión:
+```
+exit
+```
+o sino tambien:
+```
+EXIT
+```
 ## <font size="6">Pruebas</font>
 Aqui se describen unas pruebas para probar cada funcionalidad. Los mensajes de prueba se ingresan una vez conectado con el servidor, para esto ver la sección anterior.
 ### <font size="5">Broadcast</font>
