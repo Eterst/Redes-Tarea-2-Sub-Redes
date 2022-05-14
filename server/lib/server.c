@@ -25,33 +25,6 @@ regex_t regexMask;
 regex_t regexMask2;
 regex_t regexExit;
 
-struct IP
-{
-    uint8_t firstByte;
-    uint8_t secondByte;
-    uint8_t thirdByte;
-    uint8_t fourByte;
-} typedef IP;
-/**
- * @brief Crea un objeto IP
- * 
- * @param mask Si es 0 se inicializa cada byte en 0, de lo contrario se inicializa cada byte con 255
- * @return IP* Nuevo IP recien creado.
- */
-IP *createIp(int mask) {
-    IP *newIp = malloc(sizeof(IP));
-    uint8_t defaultValue = 0;
-    if (mask)
-    {
-        defaultValue = 255;
-    }
-
-    newIp->firstByte = defaultValue;
-    newIp->secondByte = defaultValue;
-    newIp->thirdByte = defaultValue;
-    newIp->fourByte = defaultValue;
-    return newIp;
-}
 /**
  * @brief Compila los regex necesarios para el servidor
  * 
@@ -124,36 +97,38 @@ int compileRegex() {
  * 3: Byte 3 con mal formato
  * 4: Byte 4 con mal formato
  */
-int str2ip(char *str, IP *ip)
+int str2ip(char *str, uint *ip)
 {
+    *ip = 0;
+
     char *byte;
     byte = strtok(str, ".");
     int temp = atoi(byte);
     if (temp < 0 || temp > 255) {
         return 1;
     }
-    ip->firstByte = temp;
+    *ip = *ip | (temp << 24);
 
     byte = strtok(NULL, ".");
     temp = atoi(byte);
     if (temp < 0 || temp > 255) {
         return 2;
     }
-    ip->secondByte = temp;
+    *ip = *ip | (temp << 16);
 
     byte = strtok(NULL, ".");
     temp = atoi(byte);
     if (temp < 0 || temp > 255) {
         return 3;
     }
-    ip->thirdByte = temp;
+    *ip = *ip | (temp << 8);
 
     byte = strtok(NULL, ".");
     temp = atoi(byte);
     if (temp < 0 || temp > 255) {
         return 4;
     }
-    ip->fourByte = temp;
+    *ip = *ip | temp;
     return 0;
 }
 /**
@@ -171,7 +146,7 @@ int str2ip(char *str, IP *ip)
  * 10: Mal formato. No es ni /XX ni XXX.XXX.XXX.XXX
  * 11: Los bits de la mascara son menores 8
  */
-int str2mask(char *str, IP *ip) {
+int str2mask(char *str, uint *ip) {
     if (regexec(&regexMask, str, 0, NULL, 0) == 0) {
         int str_len = strlen(str);
         if (str[str_len-1] == '\n') {
@@ -187,22 +162,8 @@ int str2mask(char *str, IP *ip) {
         }
         int diff = 32-mask;
         
-        if (diff < 9) {
-            ip->fourByte = ((255 >> diff) << diff);
-            return 0;
-        }
-        if (diff < 17) {
-            ip->fourByte = 0;
-            ip->thirdByte = ((255 >> diff) << diff);
-            return 0;
-        }
-        if (diff < 25) {
-            ip->fourByte = 0;
-            ip->thirdByte = 0;
-            ip->secondByte = ((255 >> diff) << diff);
-            return 0;
-        }
-        return 11;
+        *ip = ((~0) >> diff) << diff;
+        return 0;
     }
     if (regexec(&regexMask2, str, 0, NULL, 0) == 0) {
         int str_len = strlen(str);
@@ -222,17 +183,6 @@ int str2mask(char *str, IP *ip) {
     return 10;
 }
 /**
- * @brief Calcula el complemento(negación) a un IP
- * 
- * @param ip Estructura que representa un IP
- */
-void bitCompliment(IP *ip) {
-    ip->firstByte = ~ip->firstByte;
-    ip->secondByte = ~ip->secondByte;
-    ip->thirdByte = ~ip->thirdByte;
-    ip->fourByte = ~ip->fourByte;
-}
-/**
  * @brief Transforma un String en un ip y mascara de red
  * 
  * @param str String que contiene el ip y mascara de red. Formato: 'XXX.XXX.XXX.XXX MASK /XX' o 'XXX.XXX.XXX.XXX MASK XXX.XXX.XXX.XXX'
@@ -242,7 +192,7 @@ void bitCompliment(IP *ip) {
  * 
  * @return int 0 Si se ejecuto correctamente, de lo contrario es un codigo de error
  */
-int str2IpMask(char *str, IP *ip, IP *netMask, int iWord) {
+int str2IpMask(char *str, uint *ip, uint *netMask, int iWord) {
     char *token;
     char *save_ptr1;
     // Hago tres strtok para quitar GET BROADCAST IP
@@ -255,7 +205,6 @@ int str2IpMask(char *str, IP *ip, IP *netMask, int iWord) {
     if (return_value){
         return return_value;
     }
-    //printf("IP: %d.%d.%d.%d\n", ip->firstByte, ip->secondByte, ip->thirdByte, ip->fourByte);
 
     token = strtok_r(NULL, " ",&save_ptr1);
     token = strtok_r(NULL, " ",&save_ptr1);
@@ -264,40 +213,13 @@ int str2IpMask(char *str, IP *ip, IP *netMask, int iWord) {
         return return_value;
     }
     return 0;
-    //printf("NETMASK: %d.%d.%d.%d\n", netMask->firstByte, netMask->secondByte, netMask->thirdByte, netMask->fourByte);
 }
 /**
- * @brief Aplica la operación bitwise OR entre dos IP
+ * @brief Envia un error correspondiente al valor de error dado
  * 
- * @param ip1 Primer IP a aplicar OR
- * @param ip2 Segundo IP a aplicar OR
- * 
- * @return IP* Nuevo IP resultado del OR
+ * @param clientFd FileDescriptor del cliente donde se escribira el error
+ * @param return_value Valor de error que especifica que error es
  */
-IP *ipOr(IP *ip1, IP *ip2) {
-    IP *newIp = createIp(0);
-    newIp->firstByte = ip1->firstByte | ip2->firstByte;
-    newIp->secondByte = ip1->secondByte | ip2->secondByte;
-    newIp->thirdByte = ip1->thirdByte | ip2->thirdByte;
-    newIp->fourByte = ip1->fourByte | ip2->fourByte;
-    return newIp;
-}
-/**
- * @brief Aplica la operación bitwise AND entre dos IP
- * 
- * @param ip1 Primer IP a aplicar AND
- * @param ip2 Segundo IP a aplicar AND
- * @return IP* Nuevo IP resultado del AND
- */
-IP *ipAnd(IP *ip1, IP *ip2) {
-    IP *newIp = createIp(0);
-    newIp->firstByte = ip1->firstByte & ip2->firstByte;
-    newIp->secondByte = ip1->secondByte & ip2->secondByte;
-    newIp->thirdByte = ip1->thirdByte & ip2->thirdByte;
-    newIp->fourByte = ip1->fourByte & ip2->fourByte;
-    return newIp;
-}
-
 void sendError(int clientFd, int return_value){
     char response[BUFF_SIZE];
     memset(response, 0, sizeof(response));
@@ -367,15 +289,15 @@ void selectFunction(int *tempFd) {
             close(clientFd);
             exit(5);
         }
-        printf("Recibido %s\n\n", buffer);
+        printf("Recibido %s\n", buffer);
         int return_value;
         int visited = 0;
 
         char response[BUFF_SIZE];
         memset(response, 0, sizeof(response));
 
-        IP *ip = createIp(0);
-        IP *netMask = createIp(1);
+        uint *ip = (uint *) malloc(sizeof(uint));
+        uint *netMask = (uint *) malloc(sizeof(uint));
         if (regexec(&regexExit, buffer, 0, NULL, 0) == 0) {
             break;
         }
@@ -386,12 +308,10 @@ void selectFunction(int *tempFd) {
                 sendError(clientFd, return_value);
                 continue;
             }
-            bitCompliment(netMask);
-            IP *broadcastIp = ipOr(ip,netMask);
-            sprintf(response, "%d.%d.%d.%d\n", broadcastIp->firstByte, broadcastIp->secondByte, broadcastIp->thirdByte, broadcastIp->fourByte);
-            free(broadcastIp);
+            *netMask = ~(*netMask);
+            uint broadcastIp = *ip | *netMask;
+            sprintf(response, "%d.%d.%d.%d\n", (broadcastIp >> 24), (broadcastIp & (255 << 16)) >> 16, (broadcastIp & (255 << 8)) >> 8, (broadcastIp & 255));
         }
-
         if (!visited && regexec(&regexNetwork, buffer, 0, NULL, 0) == 0) {
             visited = 1;
             int return_value = str2IpMask(buffer,ip,netMask,4);
@@ -399,37 +319,40 @@ void selectFunction(int *tempFd) {
                 sendError(clientFd, return_value);
                 continue;
             }
-            IP *gateway = ipAnd(ip,netMask);
-            sprintf(response, "%d.%d.%d.%d\n", gateway->firstByte, gateway->secondByte, gateway->thirdByte, gateway->fourByte);
-            free(gateway);
+            uint network = *ip & *netMask;
+            sprintf(response, "%d.%d.%d.%d\n", (network >> 24), (network & (255 << 16)) >> 16, (network & (255 << 8)) >> 8, (network & 255));
         }
 
         if (!visited && regexec(&regexHost, buffer, 0, NULL, 0) == 0) {
             visited = 1;
-            printf("Es Host\n");
             int return_value = str2IpMask(buffer,ip,netMask,4);
             if(return_value){
                 sendError(clientFd, return_value);
                 continue;
             }
-            IP *gateway = ipAnd(ip,netMask);
-            bitCompliment(netMask);
-            char *range1 = malloc(sizeof(char)*20);
-            char *range2 = malloc(sizeof(char)*20);
-            char *range3 = malloc(sizeof(char)*20);
-            char *range4 = malloc(sizeof(char)*20);
-            sprintf(range1, "%d", gateway->firstByte);
-            sprintf(range2, "%d", gateway->secondByte);
-            sprintf(range3, "%d", gateway->thirdByte);
-            sprintf(range4, "%d", gateway->fourByte);
-            if (netMask->fourByte != 0){
-                sprintf(range4, "{1-%d}", netMask->fourByte-1);
+            uint network = *ip & *netMask;
+            *netMask = ~(*netMask);
+            uint maxIp = *ip | *netMask;
+            
+            char range1[26];
+            char range2[26];
+            char range3[26];
+            char range4[26];
+            sprintf(range1, "%d", network >> 24);
+            sprintf(range2, "%d", (network & (255 << 16)) >> 16);
+            sprintf(range3, "%d", (network & (255 << 8)) >> 8);
+            sprintf(range4, "%d", network & 255);
+
+            uint nNetwork = network ^ maxIp;
+
+            if (nNetwork && 255 != 0){
+                sprintf(range4, "{%d-%d}", (network & 255)+1, (maxIp & 255)-1);
             }
-            if (netMask->thirdByte != 0){
-                sprintf(range3, "{0-%d}", netMask->thirdByte);
+            if ((nNetwork & (255 << 16)) >> 16 != 0){
+                sprintf(range3, "{%d-%d}", (network & (255 << 16)) >> 16, (maxIp & (255 << 16)) >> 16);
             }
-            if (netMask->secondByte != 0){
-                sprintf(range2, "{0-%d}", netMask->secondByte);
+            if ((nNetwork & (255 << 8)) >> 8 != 0){
+                sprintf(range2, "{%d-%d}", (network & (255 << 8)) >> 8, (maxIp & (255 << 8)) >> 8);
             }
 
             sprintf(response, "%s.%s.%s.%s\n", range1,range2,range3,range4);
@@ -437,17 +360,14 @@ void selectFunction(int *tempFd) {
 
         if (!visited && regexec(&regexRandom, buffer, 0, NULL, 0) == 0) {
             visited = 1;
-            printf("Es Random\n");
             strcpy(response, "RANDOM");
         }
+        free(ip);
+        free(netMask);
         if (!visited) {
-            printf("No es ninguno\n");
             sendError(clientFd, 12);
             continue;
         }
-
-        free(ip);
-        free(netMask);
 
         if (write(clientFd, response, sizeof(response)) < 0) {
             perror("Error de lectura\n");
