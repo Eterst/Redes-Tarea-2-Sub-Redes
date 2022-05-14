@@ -1,6 +1,7 @@
 #include <stdio.h>     // perror, printf
+#include <time.h>
 #include <stdlib.h>    // exit, atoi
-#include <unistd.h>    // read, write, close
+#include <unistd.h>    // recv, send, close
 #include <arpa/inet.h> // sockaddr_in, AF_INET, SOCK_STREAM, INADDR_ANY, socket etc...
 #include <string.h>    // memset
 #include <sys/ioctl.h>
@@ -174,9 +175,8 @@ int str2mask(char *str, uint *ip) {
  * 
  * @return int 0 Si se ejecuto correctamente, de lo contrario es un codigo de error
  */
-int str2IpMask(char *str, uint *ip, uint *netMask, int iWord) {
+int str2IpMask(char *str, char *save_ptr1, uint *ip, uint *netMask, int iWord, int more, uint *number, uint *sizeMask) {
     char *token;
-    char *save_ptr1;
     // Hago tres strtok para quitar GET BROADCAST IP
     token = strtok_r(str, " ",&save_ptr1);
     for (int i = 0; i < iWord; i++) {
@@ -193,6 +193,22 @@ int str2IpMask(char *str, uint *ip, uint *netMask, int iWord) {
     return_value = str2mask(token,netMask);
     if (return_value){
         return return_value;
+    }
+    if (more) {
+        char *end;
+        token = strtok_r(NULL," ",&save_ptr1);
+        token = strtok_r(NULL," ",&save_ptr1);
+        *number = strtoul(token, &end, 10);
+        if (*number < 0) {
+            return 13;
+        }
+        token = strtok_r(NULL," ",&save_ptr1);
+        token = strtok_r(NULL," ",&save_ptr1);
+        int return_value = str2mask(token, sizeMask);
+        if(return_value){
+            return 9 + return_value;
+        }
+
     }
     return 0;
 }
@@ -242,6 +258,33 @@ void sendError(int clientFd, int return_value){
         case 12:
             strcpy(response, "No corresponde a ninguna de las 4 funcionalidades. Revise el formato:\n\nGET BROADCAST IP {dirección IP} MASK {/bits o X.X.X.X}\nGET NETWORK NUMBER IP {dirección IP} MASK {/bits o X.X.X.X}\nGET HOSTS RANGE IP {dirección IP} MASK {/bits o X.X.X.X}\nGET RANDOM SUBNETS NETWORK NUMBER {Y.Y.Y.Y} MASK {/bits o X.X.X.X} NUMBER {número de redes} SIZE {/bits o X.X.X.X}\n");
             break;
+        case 13:
+            strcpy(response, "Numero invalido. Tiene que ser mayor a 0\n");
+            break;
+        case 14:
+            strcpy(response, "Mal formato en mascara de tamaño. No es ni /XX ni XXX.XXX.XXX.XXX\n");
+            break;
+        case 15:
+            strcpy(response, "Byte 1 de Mascara de tamaño con mal formato\n");
+            break;
+        case 16:
+            strcpy(response, "Byte 2 de Mascara de tamaño con mal formato\n");
+            break;
+        case 17:
+            strcpy(response, "Byte 3 de Mascara de tamaño con mal formato\n");
+            break;
+        case 18:
+            strcpy(response, "Byte 4 de Mascara de tamaño con mal formato\n");
+            break;
+        case 19:
+            strcpy(response, "Mal formato en mascara de tamaño. No es ni /XX ni XXX.XXX.XXX.XXX\n");
+            break;
+        case 20:
+            strcpy(response, "Los bits de la mascara de tamaño son menores 8\n");
+            break;
+        case 21:
+            strcpy(response, "Numero de redes muy grande, no se pueden haber tantas\n");
+            break;
         default:
             strcpy(response, "Error inesperado\n");
             break;
@@ -285,7 +328,8 @@ void selectFunction(int *tempFd) {
         }
         if (!visited && regexec(&regexBroadcast, buffer, 0, NULL, 0) == 0) {
             visited = 1;
-            int return_value = str2IpMask(buffer,ip,netMask,3);
+            char *save_ptr1;
+            int return_value = str2IpMask(buffer,save_ptr1,ip,netMask,3, 0, NULL, NULL);
             if(return_value){
                 sendError(clientFd, return_value);
                 continue;
@@ -296,7 +340,8 @@ void selectFunction(int *tempFd) {
         }
         if (!visited && regexec(&regexNetwork, buffer, 0, NULL, 0) == 0) {
             visited = 1;
-            int return_value = str2IpMask(buffer,ip,netMask,4);
+            char *save_ptr1;
+            int return_value = str2IpMask(buffer,save_ptr1,ip,netMask,4, 0, NULL, NULL);
             if(return_value){
                 sendError(clientFd, return_value);
                 continue;
@@ -307,7 +352,8 @@ void selectFunction(int *tempFd) {
 
         if (!visited && regexec(&regexHost, buffer, 0, NULL, 0) == 0) {
             visited = 1;
-            int return_value = str2IpMask(buffer,ip,netMask,4);
+            char *save_ptr1;
+            int return_value = str2IpMask(buffer,save_ptr1,ip,netMask,4, 0, NULL, NULL);
             if(return_value){
                 sendError(clientFd, return_value);
                 continue;
@@ -339,7 +385,34 @@ void selectFunction(int *tempFd) {
 
         if (!visited && regexec(&regexRandom, buffer, 0, NULL, 0) == 0) {
             visited = 1;
-            strcpy(response, "RANDOM");
+            char *save_ptr1;
+            uint *sizeMask = (uint *) malloc(sizeof(uint));
+            uint *number = (uint *) malloc(sizeof(uint));
+            int return_value = str2IpMask(buffer,save_ptr1,ip,netMask,5, 1, number, sizeMask);
+            if (return_value) {
+                sendError(clientFd, return_value);
+                continue;
+            }
+            uint network = *ip & *netMask;
+            uint invertNetMask = ~(*netMask);
+            uint maxIp = network | invertNetMask;
+            if (*netMask + 1 / (~(*sizeMask)) + 1 < *number) {
+                sendError(clientFd, 21);
+            }
+            for (uint i = 0; i < *number; i++) {
+                uint randomSubnet = (rand() % (maxIp - network + 1)) + network;
+                randomSubnet = randomSubnet & *sizeMask;
+                sprintf(response, "%d.%d.%d.%d\n", (randomSubnet >> 24), (randomSubnet & (255 << 16)) >> 16, (randomSubnet & (255 << 8)) >> 8, (randomSubnet & 255));
+                if (write(clientFd, response, sizeof(response)) < 0) {
+                    perror("Error de lectura\n");
+                }
+                memset(response, 0, sizeof(response));
+            }
+            free(sizeMask);
+            free(number);
+            free(ip);
+            free(netMask);
+            continue;
         }
         free(ip);
         free(netMask);
@@ -369,7 +442,8 @@ int server(int port) {
     int serverFd, clientFd;
     SA_IN server, client;
     int addr_size;
-
+    
+    srand(time(NULL));
     memset(&serverFd, 0, sizeof(serverFd));
 
     serverFd = socket(AF_INET, SOCK_STREAM, 0);
