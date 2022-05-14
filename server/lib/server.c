@@ -16,12 +16,14 @@ typedef struct sockaddr_in SA_IN;
 #define REGEX_RANDOM "^GET RANDOM SUBNETS NETWORK NUMBER [0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9].[0-9]?[0-9]?[0-9] MASK ((/[0-9][0-9]?)|([0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9])) NUMBER [0-9]* SIZE ((/[0-9][0-9]?)|([0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9]))\r?\n$"
 #define REGEX_MASK "^/[0-9][0-9]?\r?\n?$"
 #define REGEX_MASK2 "^[0-9]{3}.([0-9][0-9])?[0-9].([0-9][0-9])?[0-9].([0-9][0-9])?[0-9]\r?\n?$"
+#define REGEX_EXIT "^(exit)|(EXIT)"
 regex_t regexBroadcast;
 regex_t regexNetwork;
 regex_t regexHost;
 regex_t regexRandom;
 regex_t regexMask;
 regex_t regexMask2;
+regex_t regexExit;
 
 struct IP
 {
@@ -97,6 +99,13 @@ int compileRegex() {
     if (return_value != 0)
     {
         printf("Error al crear Regex Mask2\n");
+        return 1;
+    }
+
+    return_value = regcomp(&regexExit, REGEX_EXIT, REG_EXTENDED);
+    if (return_value != 0)
+    {
+        printf("Error al crear Regex EXIT\n");
         return 1;
     }
 
@@ -367,7 +376,9 @@ void selectFunction(int *tempFd) {
 
         IP *ip = createIp(0);
         IP *netMask = createIp(1);
-
+        if (regexec(&regexExit, buffer, 0, NULL, 0) == 0) {
+            break;
+        }
         if (!visited && regexec(&regexBroadcast, buffer, 0, NULL, 0) == 0) {
             visited = 1;
             int return_value = str2IpMask(buffer,ip,netMask,3);
