@@ -1,5 +1,5 @@
-# Tarea Corta #3 de Redes
-Tarea programada #3 de Redes.  
+# Tarea Corta #2 de Redes
+Tarea programada #2 de Redes.  
 **Estudiante**:
   - Jonder Hernández Gutiérrez
 
