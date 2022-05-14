@@ -428,8 +428,9 @@ void selectFunction(int *tempFd) {
       uint network = *ip & *netMask;
       uint invertNetMask = ~(*netMask);
       uint maxIp = network | invertNetMask;
-      if (*netMask + 1 / (~(*sizeMask)) + 1 < *number) {
+      if (((~(*netMask) +1)/( ~(*sizeMask) + 1)) < *number) {
         sendError(clientFd, 21);
+        continue;
       }
       for (uint i = 0; i < *number; i++) {
         uint randomSubnet = (rand() % (maxIp - network + 1)) + network;
