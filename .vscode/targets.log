@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri May 13 19:04:52 2022
+# Make data base, printed on Sat May 14 12:40:39 2022
 
 # Variables
 
@@ -55,7 +55,7 @@ PATH = /home/eters/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/b
 # environment
 VSCODE_LOG_STACK = false
 # environment
-VSCODE_IPC_HOOK_CLI = /tmp/vscode-ipc-cee22a8b-7bb8-4762-8600-9a214ed3a518.sock
+VSCODE_IPC_HOOK_CLI = /tmp/vscode-ipc-82f2af8a-9a84-42ba-8f86-1d9c6dec62cf.sock
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -69,7 +69,7 @@ PWD = /home/eters/git/Redes-Tarea-3-Sub-Redes
 # default
 .LOADED := 
 # environment
-WSL_INTEROP = /run/WSL/14_interop
+WSL_INTEROP = /run/WSL/1660_interop
 # environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
@@ -220,6 +220,6 @@ clean:
 # strcache performance: lookups = 25 / hit rate = 28%
 # hash-table stats:
 # Load=18/8192=0%, Rehash=0, Collisions=1/25=4%
-# Finished Make data base on Fri May 13 19:04:52 2022
+# Finished Make data base on Sat May 14 12:40:39 2022
 
  
