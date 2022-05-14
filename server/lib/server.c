@@ -103,32 +103,14 @@ int str2ip(char *str, uint *ip)
 
     char *byte;
     byte = strtok(str, ".");
-    int temp = atoi(byte);
-    if (temp < 0 || temp > 255) {
-        return 1;
+    for (int i = 0; i < 4; i++) {
+        int temp = atoi(byte);
+        if (temp < 0 || temp > 255) {
+            return i+1;
+        }
+        *ip = *ip | (temp << (8*(3-i)));
+        byte = strtok(NULL, ".");
     }
-    *ip = *ip | (temp << 24);
-
-    byte = strtok(NULL, ".");
-    temp = atoi(byte);
-    if (temp < 0 || temp > 255) {
-        return 2;
-    }
-    *ip = *ip | (temp << 16);
-
-    byte = strtok(NULL, ".");
-    temp = atoi(byte);
-    if (temp < 0 || temp > 255) {
-        return 3;
-    }
-    *ip = *ip | (temp << 8);
-
-    byte = strtok(NULL, ".");
-    temp = atoi(byte);
-    if (temp < 0 || temp > 255) {
-        return 4;
-    }
-    *ip = *ip | temp;
     return 0;
 }
 /**
@@ -334,10 +316,7 @@ void selectFunction(int *tempFd) {
             *netMask = ~(*netMask);
             uint maxIp = *ip | *netMask;
             
-            char range1[26];
-            char range2[26];
-            char range3[26];
-            char range4[26];
+            char range1[26], range2[26], range3[26], range4[26];
             sprintf(range1, "%d", network >> 24);
             sprintf(range2, "%d", (network & (255 << 16)) >> 16);
             sprintf(range3, "%d", (network & (255 << 8)) >> 8);
