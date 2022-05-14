@@ -108,12 +108,12 @@ int compileRegex() {
   return 0;
 }
 /**
- * @brief
+ * @brief Calcula el numero de bits prendidos de un int de 32 bits
  *
- * @param i
- * @return int
+ * @param i Numero que se quiere calcular la cantidad de bits prendidos
+ * @return int Numero de bits prendidos
  */
-int numberOfSetBits(unsigned int i) {
+int numberOfSetBits(uint i) {
   // Java: use int, and use >>> instead of >>. Or use Integer.bitCount()
   // C or C++: use uint32_t
   i = i - ((i >> 1) & 0x55555555);                // add pairs of bits
@@ -371,6 +371,7 @@ void selectFunction(int *tempFd) {
     if (regexec(&regexExit, buffer, 0, NULL, 0) == 0) {
       break;
     }
+    /* Calcular ip de broadcast */
     if (!visited && regexec(&regexBroadcast, buffer, 0, NULL, 0) == 0) {
       visited = 1;
       char *save_ptr1;
@@ -386,6 +387,7 @@ void selectFunction(int *tempFd) {
               (broadcastIp & (255 << 16)) >> 16,
               (broadcastIp & (255 << 8)) >> 8, (broadcastIp & 255));
     }
+    /* Calcular ip de red */
     if (!visited && regexec(&regexNetwork, buffer, 0, NULL, 0) == 0) {
       visited = 1;
       char *save_ptr1;
@@ -400,7 +402,7 @@ void selectFunction(int *tempFd) {
               (network & (255 << 16)) >> 16, (network & (255 << 8)) >> 8,
               (network & 255));
     }
-
+    /* Calcular rango de ip's */
     if (!visited && regexec(&regexHost, buffer, 0, NULL, 0) == 0) {
       visited = 1;
       char *save_ptr1;
@@ -436,7 +438,7 @@ void selectFunction(int *tempFd) {
 
       sprintf(response, "%s.%s.%s.%s\n", range1, range2, range3, range4);
     }
-
+    /* Calcular subredes aleatorias */
     if (!visited && regexec(&regexRandom, buffer, 0, NULL, 0) == 0) {
       visited = 1;
       char *save_ptr1;

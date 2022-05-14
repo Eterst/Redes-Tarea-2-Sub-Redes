@@ -14,7 +14,7 @@ Implementar una calculadora de subredes IPv4 utilizando lenguaje de programació
 ### <font size="5">**En Windows**</font>
 
 1. Instalar Docker y Docker Compose, para esto se puede apoyar en la siguiente página: <https://docs.docker.com/desktop/windows/install/>
-    - Puede descargar el ejecutable que incluse Docker y Docker Compose en: <https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe>
+    - Puede descargar el ejecutable que incluye Docker y Docker Compose en: <https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe>
 2. Entrar a la carpeta del proyecto, utilizando la consola de windows y el comando 'cd' desplazarse en los directorios del sistema hasta encontrar la carpeta donde se encuentra el proyecto, también se puede utilizar la dirección completa del archivo.
 3. Una vez se tiene la consola ubicada dentro de la dirección del proyecto utilizar el comando:  
 
@@ -159,7 +159,7 @@ Pruebas para la funcionalidad para la obtención del número de subred aleatorio
 1.  ```
     GET RANDOM SUBNETS NETWORK NUMBER 10.0.0.0 MASK /8 NUMBER 3 SIZE /24
     ```
-    Posibles resultados esperados: 
+    Ejemplo de posibles resultados: 
     ```
     10.20.10.0/24
     10.33.11.0/24
@@ -168,4 +168,7 @@ Pruebas para la funcionalidad para la obtención del número de subred aleatorio
 
 # Referencias
 - [1] Ibrahim, M. (2019). Echo server and client using sockets in c. Mohsensy. Recuperado de https://mohsensy.github.io/programming/2019/09/25/echo-server-and-client-using-sockets-in-c.html.
+
 - [2] Regular expressions in C - GeeksforGeeks. GeeksforGeeks. Recuperado de https://www.geeksforgeeks.org/regular-expressions-in-c/
+
+- [3] Cordes, P. (2021). How to count the number of set bits in a 32-bit integer. Stack Overflow. Recuperado de https://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer.
